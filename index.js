@@ -202,6 +202,15 @@ async function main() {
   const templateStr = await loadEmailTemplate(emailTemplateUrl, defaultTemplatePath);
   const emails = await getSubscribeEmails(subscribeJsonUrl);
 
+	// 输出所有相关的环境变量
+	console.log("环境变量:");
+	console.log("INPUT_SMTP_SERVER:", process.env.INPUT_SMTP_SERVER);
+	console.log("INPUT_SMTP_PORT:", process.env.INPUT_SMTP_PORT);
+	console.log("INPUT_SMTP_USE_TLS:", process.env.INPUT_SMTP_USE_TLS);
+	console.log("INPUT_SENDER_EMAIL:", process.env.INPUT_SENDER_EMAIL);
+	console.log("SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "已设置" : "未设置");
+
+
   for (const article of newArticles) {
     const htmlContent = renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo);
     const subject = `博客更新通知 - ${article.title}`;
