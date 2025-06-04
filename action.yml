@@ -35,7 +35,7 @@ inputs:
     default: 'https://weekdaycare.cn/asset/avatar.svg'
 
 runs:
-  using: 'python'
+  using: 'docker'
   main: 'main.py'
 
 branding:
