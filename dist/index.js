@@ -31872,10 +31872,10 @@ const FeedParser = __nccwpck_require__(9155);
 const log = console;
 
 // 下载 JSON 文件
-async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
+async function downloadJson(url, retries = 3, delay = 2000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const response = await axios.get(url, { headers, timeout: 10000 });
+      const response = await axios.get(url);
       return response.data;
     } catch (error) {
       log.warn(`下载 JSON 失败 [${url}]，第 ${attempt + 1} 次: ${error.message}`);
@@ -31886,10 +31886,9 @@ async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
 }
 
 // 获取上次文章数据
-async function getLastArticles(repo, token) {
+async function getLastArticles(repo) {
   const url = `https://raw.githubusercontent.com/${repo}/refs/heads/output/v2/last_articles.json`;
-  const headers = { Authorization: `Bearer ${token}` };
-  const data = await downloadJson(url, headers);
+  const data = await downloadJson(url);
   if (!data) {
     log.warn("获取 last_articles.json 失败，使用空数据");
     return { articles: [], fail_count: 0 };
@@ -32000,9 +31999,8 @@ async function main() {
   const websiteTitle = process.env.WEBSITE_TITLE;
   const websiteIcon = process.env.WEBSITE_ICON;
   const repo = process.env.GITHUB_REPOSITORY;
-  const token = process.env.GITHUB_TOKEN;
 
-  const lastData = await getLastArticles(repo, token);
+  const lastData = await getLastArticles(repo);
   const lastArticles = lastData.articles || [];
   let failCount = lastData.fail_count || 0;
 
