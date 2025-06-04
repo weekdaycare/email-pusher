@@ -1,45 +1,46 @@
-name: 'Email Pusher'
-description: '定时解析 RSS 并邮件推送新文章'
+name: 'RSS to Email Notifier'
+description: '定时解析博客 RSS，检测新文章并批量邮件推送给订阅用户'
+author: '你的名字或组织'
+branding:
+  icon: mail
+  color: blue
+
 inputs:
   rss_url:
     description: '博客 RSS 链接'
     required: true
   subscribe_json_url:
-    description: '订阅邮箱 JSON 链接'
+    description: '订阅邮箱 JSON 链接（格式：{"emails": ["a@example.com", ...]}）'
     required: true
   email_template_url:
-    description: '邮件 HTML 模板链接'
+    description: '邮件 HTML 模板链接（支持 Mustache 语法）'
     required: true
   smtp_server:
     description: 'SMTP 服务器地址'
     required: true
   smtp_port:
-    description: 'SMTP 端口'
+    description: 'SMTP 端口（如 465/587）'
     required: true
-  smtp_tls:
-    description: '是否使用 TLS (true/false)'
+  smtp_use_tls:
+    description: '是否使用 TLS（true/false）'
     required: true
     default: 'true'
   sender_email:
-    description: '发件人邮箱'
+    description: '发信邮箱地址'
     required: true
-  blog_info:
-    description: 'blog name'
+  website_title:
+    description: '网站标题（用于邮件模板变量）'
     required: false
-    default: 'Blog'
-  blog_icon:
-    description: 'blog icon'
+    default: '博客订阅'
+  website_icon:
+    description: '网站图标（用于邮件模板变量，可为空）'
     required: false
-    default: 'https://weekdaycare.cn/asset/avatar.svg'
-env:
-  SMTP_PASSWORD:
-    description: 'SMTP 密码，需设置为 Secret'
-    required: true
+    default: ''
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: 'node20'
+  main: 'index.js'
 
-branding:
-  icon: 'mail'
-  color: 'blue'
+env:
+  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

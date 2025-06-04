@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@vercel/ncc": "^0.38.3",
+    "feedparser-promised": "^2.0.1",
+    "fs-extra": "^11.2.0",
+    "mustache": "^4.2.0",
+    "node-fetch": "^2.6.7",
+    "nodemailer": "^6.9.11"
+  }
+}

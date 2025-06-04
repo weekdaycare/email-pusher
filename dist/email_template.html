@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>最新文章通知</title>
+</head>
+<body>
+	<div class="page flex-col">
+		<div class="box_3 flex-col"
+			style=" display: flex; position: relative; width: 100%; height: 206px; background: rgba(244,81,30,0.2); border-radius: 12px 12px 0 0; top: 0; left: 0; justify-content: center;">
+			<div class="section_1 flex-col"
+				style=" background-image: url(&quot;{{ website_icon }}&quot;); position: absolute; width: 152px; height: 152px; display: flex; top: 130px; background-size: cover;">
+			</div>
+		</div>
+		<div class="box_4 flex-col"
+			style=" margin-top: 92px; display: flex; flex-direction: column; align-items: center;">
+			<div class="text-group_5 flex-col justify-between"
+				style=" display: flex; flex-direction: column; align-items: center; margin: 0 20px;"><span
+					class="text_1"
+					style=" font-size: 26px; font-family: PingFang-SC-Bold, PingFang-SC; font-weight: bold; color: #000000; line-height: 37px; text-align: center;">嘿！{{ website_title }}&nbsp;发布新文章啦</span><span
+					class="text_2"
+					style=" font-size: 16px; font-family: PingFang-SC-Bold, PingFang-SC; font-weight: bold; color: #00000030; line-height: 22px; margin-top: 21px; text-align: center;">你关注的鸽子终于更新啦！</span></div>
+			<div class="box_2 flex-row"
+				style=" margin: 0 20px; min-height: 128px; background: #F7F7F7; border-radius: 12px; margin-top: 34px; display: flex; flex-direction: column; align-items: flex-start; padding: 32px 16px; width: calc(100% - 40px);">
+				<div class="text-wrapper_4 flex-col justify-between"
+					style=" display: flex; flex-direction: column; margin-left: 30px; margin-bottom: 16px;"><span
+						class="text_3"
+						style=" height: 22px; font-size: 16px; font-family: PingFang-SC-Bold, PingFang-SC; font-weight: bold; color: #F4511E; line-height: 22px;">标题：</span><span
+						class="text_4"
+						style=" margin-top: 6px; margin-right: 22px; font-size: 16px; font-family: PingFangSC-Regular, PingFang SC; font-weight: 400; color: #000000; line-height: 22px;">{{ title }}</span>
+				</div>
+				<hr
+					style="  display: flex;  position: relative;  border: 1px dashed rgba(244,81,30,0.2);  box-sizing: content-box;  height: 0px;  overflow: visible;  width: 100%;">
+				<div class="text-wrapper_4 flex-col justify-between"
+					style=" display: flex; flex-direction: column; margin-left: 30px;">
+					<hr><span class="text_3"
+						style=" height: 22px; font-size: 16px; font-family: PingFang-SC-Bold, PingFang-SC; font-weight: bold; color: #F4511E; line-height: 22px;">摘要：</span><span
+						class="text_4"
+						style=" margin-top: 6px; margin-right: 22px; font-size: 16px; font-family: PingFangSC-Regular, PingFang SC; font-weight: 400; color: #000000; line-height: 22px;">{{ summary }}</span>
+				</div><a class="text-wrapper_2 flex-col"
+					style=" min-width: 106px; height: 38px; background: rgba(244,81,30,0.2); border-radius: 32px; display: flex; align-items: center; justify-content: center; text-decoration: none; margin: auto; margin-top: 32px;"
+					href="{{ link }}"><span class="text_5" style=" color: #F4511E;">来瞅瞅？</span></a>
+			</div>
+			<div class="text-group_6 flex-col justify-between"
+				style=" display: flex; flex-direction: column; align-items: center; margin-top: 34px;"><span
+					class="text_6"
+					style=" height: 17px; font-size: 12px; font-family: PingFangSC-Regular, PingFang SC; font-weight: 400; color: #00000045; line-height: 17px;">此邮件由朋友圈自动发出，直接回复无效。</span><a
+					class="text_7"
+					style=" height: 17px; font-size: 12px; font-family: PingFangSC-Regular, PingFang SC; font-weight: 400; color: #F4511E; line-height: 17px; margin-top: 6px; text-decoration: none;"
+					href="{{ github_issue_url }}">取消订阅</a></div>
+		</div>
+	</div>
+</body>
+</html>
