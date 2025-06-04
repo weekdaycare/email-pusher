@@ -22,8 +22,8 @@ async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
 }
 
 // 获取上次文章数据
-async function getLastArticles(repo, branch, token) {
-  const url = `https://raw.githubusercontent.com/${repo}/${branch}/v2/last_articles.json`;
+async function getLastArticles(repo, token) {
+  const url = `https://raw.githubusercontent.com/${repo}/output/v2/last_articles.json`;
   const headers = { Authorization: `Bearer ${token}` };
   const data = await downloadJson(url, headers);
   if (!data) {
@@ -136,15 +136,9 @@ async function main() {
   const websiteTitle = process.env.WEBSITE_TITLE;
   const websiteIcon = process.env.WEBSITE_ICON;
   const repo = process.env.GITHUB_REPOSITORY;
-  const branch = "output";
   const token = process.env.GITHUB_TOKEN;
 
-  if (!rssUrl || !subscribeJsonUrl || !smtpServer || !smtpPort || !senderEmail || !smtpPassword || !repo || !token) {
-    log.error("缺少必要的环境变量或输入参数");
-    process.exit(1);
-  }
-
-  const lastData = await getLastArticles(repo, branch, token);
+  const lastData = await getLastArticles(repo, token);
   const lastArticles = lastData.articles || [];
   let failCount = lastData.fail_count || 0;
 
