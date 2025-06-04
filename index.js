@@ -23,7 +23,7 @@ async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
 
 // 获取上次文章数据
 async function getLastArticles(repo, token) {
-  const url = `https://raw.githubusercontent.com/${repo}/output/v2/last_articles.json`;
+  const url = `https://raw.githubusercontent.com/${repo}/refs/heads/output/v2/last_articles.json`;
   const headers = { Authorization: `Bearer ${token}` };
   const data = await downloadJson(url, headers);
   if (!data) {
