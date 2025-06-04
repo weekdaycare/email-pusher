@@ -159,7 +159,7 @@ async function main() {
   const emailTemplateUrl = process.env.INPUT_EMAIL_TEMPLATE_URL;
   const smtpServer = process.env.INPUT_SMTP_SERVER;
   const smtpPort = process.env.INPUT_SMTP_PORT;
-  const smtpUseTls = process.env.INPUT_SMTP_USE_TLS;
+  const smtpUseTls = process.env.INPUT_SMTP_USE_TLS === "true";
   const senderEmail = process.env.INPUT_SENDER_EMAIL;
   const smtpPassword = process.env.SMTP_PASSWORD;
   const websiteTitle = process.env.WEBSITE_TITLE;
