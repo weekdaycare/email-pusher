@@ -14,7 +14,7 @@ inputs:
     required: true
   email_template_url:
     description: '邮件 HTML 模板链接（支持 Mustache 语法）'
-    required: true
+    required: false
   smtp_server:
     description: 'SMTP 服务器地址'
     required: true

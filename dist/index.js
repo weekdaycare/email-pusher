@@ -32003,7 +32003,7 @@ async function main() {
   const branch = "output";
   const token = process.env.GITHUB_TOKEN;
 
-  if (!rssUrl || !subscribeJsonUrl || !emailTemplateUrl || !smtpServer || !smtpPort || !senderEmail || !smtpPassword || !repo || !token) {
+  if (!rssUrl || !subscribeJsonUrl || !smtpServer || !smtpPort || !senderEmail || !smtpPassword || !repo || !token) {
     log.error("缺少必要的环境变量或输入参数");
     process.exit(1);
   }
