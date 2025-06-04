@@ -32026,8 +32026,8 @@ async function main() {
   const smtpUseTls = process.env.INPUT_SMTP_USE_TLS === "true";
   const senderEmail = process.env.INPUT_SENDER_EMAIL;
   const smtpPassword = process.env.INPUT_SMTP_PASSWORD;
-  const websiteTitle = process.env.WEBSITE_TITLE;
-  const websiteIcon = process.env.WEBSITE_ICON;
+  const websiteTitle = process.env.INPUT_WEBSITE_TITLE;
+  const websiteIcon = process.env.INPUT_WEBSITE_ICON;
   const repo = process.env.GITHUB_REPOSITORY;
 
   const lastData = await getLastArticles(repo);

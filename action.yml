@@ -13,7 +13,7 @@ inputs:
     description: '订阅邮箱 JSON 链接（格式：{"emails": ["a@example.com", ...]}）'
     required: true
   email_template_url:
-    description: '邮件 HTML 模板链接（支持 Mustache 语法）'
+    description: '邮件 HTML 模板链接'
     required: false
   smtp_server:
     description: 'SMTP 服务器地址'
@@ -39,9 +39,6 @@ inputs:
     description: '网站图标（用于邮件模板变量，可为空）'
     required: false
     default: ''
-  github_token:
-    description: 'GitHub Token，用于读取 last_articles.json'
-    required: false
 
 runs:
   using: 'node20'

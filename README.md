@@ -22,23 +22,52 @@ It parses your RSS feed, detects new articles, and sends a notification email us
 ### 1. Add the Action to your workflow
 
 ```yaml
+name: Email_pusher
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
 jobs:
-  send_blog_update:
+  email-pusher:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
       - name: Send Blog Update Email
-        uses: yourname/send-blog-email-action@v1.0.0
+        uses: weekdaycare/email-pusher@main
         with:
           rss_url: "https://weekdaycare.cn/atom.xml"
-          smtp_server: smtp.feishu.cn
+          smtp_server: "smtp.feishu.cn"
           smtp_port: 587
-          sender_email: comment@weekdaycare.cn
-					smtp_tls: true
-          smtp_password: ${{ secrets.SMTP_PASSWORD }}
-          subscribe_json_url: "https://raw.githubusercontent.com/weekdaycare/Friends-issue/refs/heads/output/v2/subscribe.json"
+          sender_email: "comment@weekdaycare.cn"
+          smtp_use_tls: "true"
+          subscribe_json_url: "https://raw.githubusercontent.com/weekdaycare/Friends-issue/output/v2/subscribe.json"
           website_title: "星日语"
           website_icon: "https://weekdaycare.cn/asset/avatar.svg"
-          repo: ${{ github.repository }}
+          smtp_password: ${{ secrets.SMTP_PASSWORD }}
+
+      - name: Save last_articles.json
+        run: |
+          cp last_articles.json /tmp/last_articles.json
+
+      - name: Switch to output branch and update file
+        run: |
+          git fetch origin output
+          git checkout output
+          mkdir -p v2
+          cp /tmp/last_articles.json v2/last_articles.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add v2/last_articles.json
+          git commit -m "Update last_articles.json [bot]" || echo "No changes to commit"
+          git push origin HEAD:output
 ```
 
 ### 2. Inputs
@@ -54,7 +83,6 @@ jobs:
 | subscribe_json_url | JSON URL of subscriber emails     | true     | `https://your.com/subscribers.json`|
 | website_title      | Your website title                | false    | `My Blog`                         |
 | website_icon       | Website icon URL                  | false    | `https://your.com/favicon.ico`    |
-| repo               | GitHub repository (for tracking)  | false    | `${{ github.repository }}`        |
 
 > **Tip:** Store sensitive info (SMTP password) in GitHub [Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets).
 
