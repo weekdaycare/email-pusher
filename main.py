@@ -124,29 +124,6 @@ def send_email(smtp_server, smtp_port, sender_email, password, to_emails, subjec
             else:
                 logging.error("所有邮件发送尝试失败")
 
-
-def push_last_articles_to_output_branch(token, repo):
-    """
-    将 last_articles.json 推送到 output 分支的 /v2/last_articles.json
-    """
-    subprocess.run(["git", "config", "--global", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
-    subprocess.run(["git", "config", "--global", "user.name", "github-actions[bot]"], check=True)
-    # 克隆 output 分支
-    subprocess.run([
-        "git", "clone", "--single-branch", "--branch", "output",
-        f"https://x-access-token:{token}@github.com/{repo}.git", "output_dir"
-    ], check=True)
-    os.makedirs("output_dir/v2", exist_ok=True)
-    subprocess.run(["cp", LAST_ARTICLES_FILE, "output_dir/v2/last_articles.json"], check=True)
-    # 提交并推送
-    cwd = os.getcwd()
-    os.chdir("output_dir")
-    subprocess.run(["git", "add", "v2/last_articles.json"], check=True)
-    subprocess.run(["git", "commit", "-m", "Update last_articles.json [bot]"], check=False)
-    subprocess.run(["git", "push"], check=True)
-    os.chdir(cwd)
-    logging.info("last_articles.json 已推送到 output 分支")
-
 def main():
     """
     读取输入参数
@@ -207,9 +184,6 @@ def main():
             html_content = render_email_template(template_str, article, website_title, website_icon, repo)
             subject = f"博客更新通知 - {article['title']}"
             send_email(smtp_server, smtp_port, sender_email, smtp_password, emails, subject, html_content, smtp_tls)
-
-    # 推送 last_articles.json 到 output 分支
-    push_last_articles_to_output_branch(token, repo)
 
 if __name__ == '__main__':
     main()
