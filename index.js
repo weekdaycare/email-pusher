@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const axios = require("axios");
 const nodemailer = require("nodemailer");
 const FeedParser = require("feedparser");
 
@@ -11,13 +10,22 @@ const log = console;
 async function downloadJson(url, retries = 3, delay = 2000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const response = await axios.get(url);
-      return response.data;
+      console.log(`尝试下载 JSON，第 ${attempt + 1} 次，URL: ${url}`);
+      const response = await fetch(url, { timeout: 10000 });
+      if (!response.ok) {
+        throw new Error(`HTTP 错误: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("JSON 下载成功:", data);
+      return data;
     } catch (error) {
-      log.warn(`下载 JSON 失败 [${url}]，第 ${attempt + 1} 次: ${error.message}`);
-      if (attempt < retries - 1) await new Promise((resolve) => setTimeout(resolve, delay));
+      console.warn(`下载 JSON 失败，第 ${attempt + 1} 次: ${error.message}`);
+      if (attempt < retries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
   }
+  console.error("下载 JSON 失败，超过最大重试次数");
   return null;
 }
 
@@ -129,7 +137,7 @@ async function main() {
   const emailTemplateUrl = process.env.INPUT_EMAIL_TEMPLATE_URL;
   const smtpServer = process.env.INPUT_SMTP_SERVER;
   const smtpPort = process.env.INPUT_SMTP_PORT;
-  const smtpUseTls = process.env.INPUT_SMTP_USE_TLS === "true";
+  const smtpUseTls = process.env.INPUT_SMTP_USE_TLS;
   const senderEmail = process.env.INPUT_SENDER_EMAIL;
   const smtpPassword = process.env.SMTP_PASSWORD;
   const websiteTitle = process.env.WEBSITE_TITLE;
