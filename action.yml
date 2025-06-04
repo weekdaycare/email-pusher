@@ -1,29 +1,27 @@
-name: 'RSS Update Notifier'
-description: '定时解析博客 RSS，获取最新文章并邮件推送给订阅邮箱列表'
-author: 'weekdaycare'
-
+name: 'Email Pusher'
+description: '定时解析 RSS 并邮件推送新文章'
 inputs:
   rss_url:
-    description: 'Blog RSS'
+    description: '博客 RSS 链接'
     required: true
   subscribe_json_url:
-    description: 'Email JSON'
+    description: '订阅邮箱 JSON 链接'
     required: true
   email_template_url:
-    description: 'Email HTML Template'
-    required: false
+    description: '邮件 HTML 模板链接'
+    required: true
   smtp_server:
-    description: 'SMTP server'
+    description: 'SMTP 服务器地址'
+    required: true
+  smtp_port:
+    description: 'SMTP 端口'
     required: true
   smtp_tls:
-    description: 'use TLS'
+    description: '是否使用 TLS (true/false)'
     required: true
-    default: 'fasle'
-  smtp_port:
-    description: 'SMTP port'
-    required: true
+    default: 'true'
   sender_email:
-    description: 'SMTP sender'
+    description: '发件人邮箱'
     required: true
   blog_info:
     description: 'blog name'
@@ -33,10 +31,14 @@ inputs:
     description: 'blog icon'
     required: false
     default: 'https://weekdaycare.cn/asset/avatar.svg'
+env:
+  SMTP_PASSWORD:
+    description: 'SMTP 密码，需设置为 Secret'
+    required: true
 
 runs:
   using: 'docker'
-  main: 'main.py'
+  image: 'Dockerfile'
 
 branding:
   icon: 'mail'
