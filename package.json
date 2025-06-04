@@ -1,10 +1,27 @@
 {
+  "name": "rss-article-notifier",
+  "version": "1.0.0",
+  "description": "A GitHub Action to fetch RSS feeds, detect new articles, and send email notifications.",
+  "main": "index.js",
+  "scripts": {
+    "build": "ncc build index.js -o dist",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "github-action",
+    "rss",
+    "email",
+    "notifier",
+    "automation"
+  ],
+  "license": "MIT",
   "dependencies": {
-    "@vercel/ncc": "^0.38.3",
-    "feedparser-promised": "^2.0.1",
-    "fs-extra": "^11.2.0",
-    "mustache": "^4.2.0",
-    "node-fetch": "^2.6.7",
-    "nodemailer": "^6.9.11"
+    "axios": "^1.4.0",
+    "feedparser": "^3.0.0",
+    "jsdom": "^22.1.0",
+    "nodemailer": "^6.9.4"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.34.0"
   }
 }

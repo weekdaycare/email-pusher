@@ -1,227 +1,195 @@
-const fetch = require('node-fetch');
-const FeedParser = require('feedparser-promised');
-const nodemailer = require('nodemailer');
-const Mustache = require('mustache');
-const fs = require('fs-extra');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
+const nodemailer = require("nodemailer");
+const FeedParser = require("feedparser");
 
-// 环境变量读取
-const {
-  INPUT_RSS_URL: rssUrl,
-  INPUT_SUBSCRIBE_JSON_URL: subscribeJsonUrl,
-  INPUT_EMAIL_TEMPLATE_URL: emailTemplateUrl,
-  INPUT_SMTP_SERVER: smtpServer,
-  INPUT_SMTP_PORT: smtpPort,
-  INPUT_SMTP_USE_TLS: smtpUseTls = 'true',
-  INPUT_SENDER_EMAIL: senderEmail,
-  SMTP_PASSWORD: smtpPassword,
-  WEBSITE_TITLE: websiteTitle,
-  WEBSITE_ICON: websiteIcon,
-  GITHUB_REPOSITORY: repo,
-  GITHUB_TOKEN: githubToken,
-} = process.env;
+// 配置日志
+const log = console;
 
-const LAST_ARTICLES_FILE = 'last_articles.json';
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
+// 下载 JSON 文件
 async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
-  for (let i = 0; i < retries; i++) {
+  for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const resp = await fetch(url, { headers, timeout: 10000 });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await resp.json();
-    } catch (err) {
-      console.log(`下载 JSON 失败 [${url}]，第${i + 1}次: ${err}`);
-      if (i < retries - 1) await sleep(delay);
+      const response = await axios.get(url, { headers, timeout: 10000 });
+      return response.data;
+    } catch (error) {
+      log.warn(`下载 JSON 失败 [${url}]，第 ${attempt + 1} 次: ${error.message}`);
+      if (attempt < retries - 1) await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   return null;
 }
 
+// 获取上次文章数据
 async function getLastArticles(repo, branch, token) {
   const url = `https://raw.githubusercontent.com/${repo}/${branch}/v2/last_articles.json`;
   const headers = { Authorization: `Bearer ${token}` };
   const data = await downloadJson(url, headers);
   if (!data) {
-    console.log('获取 last_articles.json 失败，使用空数据');
+    log.warn("获取 last_articles.json 失败，使用空数据");
     return { articles: [], fail_count: 0 };
   }
   return data;
 }
 
-async function saveLastArticlesToFile(articles, failCount = 0, filePath = LAST_ARTICLES_FILE) {
+// 保存文章到文件
+function saveLastArticlesToFile(articles, failCount = 0, path = "last_articles.json") {
   const data = { articles, fail_count: failCount };
-  await fs.writeJson(filePath, data, { spaces: 2, encoding: 'utf8' });
-  console.log(`last_articles.json 已写入，fail_count=${failCount}`);
+  fs.writeFileSync(path, JSON.stringify(data, null, 4), "utf-8");
+  log.info(`last_articles.json 已写入，fail_count=${failCount}`);
 }
 
+// 获取订阅邮箱
 async function getSubscribeEmails(jsonUrl) {
   const data = await downloadJson(jsonUrl);
   if (!data) return [];
   const emails = data.emails || [];
-  if (!emails.length) console.log('订阅邮箱列表为空');
+  if (!emails.length) log.warn("订阅邮箱列表为空");
   return emails;
 }
 
+// 解析 RSS
 async function parseRss(rssUrl, maxCount = 5) {
-  try {
-    const articles = await FeedParser.parse(rssUrl);
-    return articles.slice(0, maxCount).map(entry => ({
-      title: entry.title || '',
-      link: entry.link || '',
-      published: entry.pubDate || '',
-      summary: entry.summary || entry.title || '',
-    }));
-  } catch (err) {
-    console.log('RSS 解析异常:', err);
-    return [];
-  }
+  return new Promise((resolve, reject) => {
+    const articles = [];
+    const feedParser = new FeedParser();
+    axios
+      .get(rssUrl, { responseType: "stream" })
+      .then((response) => response.data.pipe(feedParser))
+      .catch((error) => reject(error));
+
+    feedParser.on("error", (error) => reject(error));
+    feedParser.on("readable", function () {
+      let item;
+      while ((item = this.read()) && articles.length < maxCount) {
+        articles.push({
+          title: item.title || "",
+          link: item.link || "",
+          published: item.pubDate || "",
+          summary: item.description || item.title || "",
+        });
+      }
+    });
+    feedParser.on("end", () => resolve(articles));
+  });
 }
 
+// 获取新文章
 function getNewArticles(latest, last) {
-  const lastLinks = new Set((last || []).map(a => a.link));
-  return (latest || []).filter(a => !lastLinks.has(a.link));
+  const lastLinks = new Set(last.map((a) => a.link));
+  return latest.filter((a) => !lastLinks.has(a.link));
 }
 
+// 下载文件
 async function downloadFile(url) {
   try {
-    const resp = await fetch(url, { timeout: 10000 });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return await resp.text();
-  } catch (err) {
-    console.log(`下载文件失败: ${url}, 错误: ${err}`);
+    const response = await axios.get(url, { timeout: 10000 });
+    return response.data;
+  } catch (error) {
+    log.error(`下载文件失败: ${url}, 错误: ${error.message}`);
     return null;
   }
 }
 
+// 渲染 HTML 模板
 function renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo) {
-  return Mustache.render(templateStr, {
-    website_title: websiteTitle,
-    website_icon: websiteIcon,
-    github_issue_url: `https://github.com/${repo}/issues`,
-    title: article.title,
-    summary: article.summary,
-    link: article.link,
-  });
+  return templateStr
+    .replace(/{{ website_title }}/g, websiteTitle)
+    .replace(/{{ website_icon }}/g, websiteIcon)
+    .replace(/{{ github_issue_url }}/g, `https://github.com/${repo}/issues`)
+    .replace(/{{ title }}/g, article.title)
+    .replace(/{{ summary }}/g, article.summary)
+    .replace(/{{ link }}/g, article.link);
 }
 
-async function sendEmail({
-  smtpServer,
-  smtpPort,
-  smtpUseTls,
-  senderEmail,
-  smtpPassword,
-  toEmails,
-  subject,
-  htmlContent,
-}) {
-  let transporter = nodemailer.createTransport({
-    host: smtpServer,
-    port: Number(smtpPort),
-    secure: smtpUseTls === true || smtpUseTls === 'true' || smtpPort === '465', // true for 465, false for other ports
-    auth: {
-      user: senderEmail,
-      pass: smtpPassword,
-    },
-    tls: smtpUseTls === false || smtpUseTls === 'false' ? { rejectUnauthorized: false } : undefined,
-  });
+
+// 发送邮件
+async function sendEmail(smtpConfig, senderEmail, toEmails, subject, htmlContent) {
+  const transporter = nodemailer.createTransport(smtpConfig);
 
   const mailOptions = {
     from: senderEmail,
-    to: toEmails.join(', '),
+    to: toEmails.join(", "),
     subject,
     html: htmlContent,
   };
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`邮件成功发送给: ${toEmails.join(', ')}`);
-      break;
-    } catch (err) {
-      console.log(`邮件发送失败，尝试第${attempt}次:`, err);
-      if (attempt === 3) {
-        console.log('所有邮件发送尝试失败');
-      } else {
-        await sleep(3000);
-      }
-    }
+  try {
+    await transporter.sendMail(mailOptions);
+    log.info(`邮件成功发送给: ${toEmails.join(", ")}`);
+  } catch (error) {
+    log.error(`邮件发送失败: ${error.message}`);
   }
 }
 
+// 主函数
 async function main() {
-  if (
-    !rssUrl ||
-    !subscribeJsonUrl ||
-    !emailTemplateUrl ||
-    !smtpServer ||
-    !smtpPort ||
-    !senderEmail ||
-    !smtpPassword ||
-    !repo ||
-    !githubToken
-  ) {
-    console.log('缺少必要的环境变量或输入参数');
+  const rssUrl = process.env.INPUT_RSS_URL;
+  const subscribeJsonUrl = process.env.INPUT_SUBSCRIBE_JSON_URL;
+  const emailTemplateUrl = process.env.INPUT_EMAIL_TEMPLATE_URL;
+  const smtpServer = process.env.INPUT_SMTP_SERVER;
+  const smtpPort = process.env.INPUT_SMTP_PORT;
+  const smtpUseTls = process.env.INPUT_SMTP_USE_TLS === "true";
+  const senderEmail = process.env.INPUT_SENDER_EMAIL;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+  const websiteTitle = process.env.WEBSITE_TITLE;
+  const websiteIcon = process.env.WEBSITE_ICON;
+  const repo = process.env.GITHUB_REPOSITORY;
+  const branch = "output";
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!rssUrl || !subscribeJsonUrl || !emailTemplateUrl || !smtpServer || !smtpPort || !senderEmail || !smtpPassword || !repo || !token) {
+    log.error("缺少必要的环境变量或输入参数");
     process.exit(1);
   }
 
-  // 获取上次文章数据
-  const branch = 'output';
-  let lastData = await getLastArticles(repo, branch, githubToken);
-  let lastArticles = lastData.articles || [];
+  const lastData = await getLastArticles(repo, branch, token);
+  const lastArticles = lastData.articles || [];
   let failCount = lastData.fail_count || 0;
 
-  // 解析 RSS
   let latestArticles = [];
   for (let i = 0; i < 3; i++) {
-    latestArticles = await parseRss(rssUrl);
-    if (latestArticles.length) break;
-    await sleep(2000);
+    try {
+      latestArticles = await parseRss(rssUrl);
+      if (latestArticles.length > 0) break;
+    } catch (error) {
+      log.warn(`RSS 解析失败: ${error.message}`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
   }
+
   if (!latestArticles.length) {
     failCount += 1;
-    console.log(`获取到的文章为空，fail_count=${failCount}`);
+    log.warn(`获取到的文章为空，fail_count=${failCount}`);
   } else {
     failCount = 0;
   }
 
-  // 只在 fail_count>=3 或解析成功时才覆盖
-  if (failCount >= 3 || latestArticles.length) {
-    await saveLastArticlesToFile(latestArticles, failCount);
+  if (failCount >= 3 || latestArticles.length > 0) {
+    saveLastArticlesToFile(latestArticles, failCount);
   }
 
-  // 检查新文章
-  const newArticles = latestArticles.length ? getNewArticles(latestArticles, lastArticles) : [];
+  const newArticles = getNewArticles(latestArticles, lastArticles);
   if (!newArticles.length) {
-    console.log('没有新文章，无需发送邮件');
-  } else {
-    let templateStr = await downloadFile(emailTemplateUrl);
-    if (!templateStr) {
-      const templatePath = path.join(__dirname, 'email_template.html');
-      templateStr = await fs.readFile(templatePath, 'utf8');
-    }
-    const emails = await getSubscribeEmails(subscribeJsonUrl);
-    for (const article of newArticles) {
-      const htmlContent = renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo);
-      const subject = `博客更新通知 - ${article.title}`;
-      await sendEmail({
-        smtpServer,
-        smtpPort,
-        smtpUseTls,
-        senderEmail,
-        smtpPassword,
-        toEmails: emails,
-        subject,
-        htmlContent,
-      });
-    }
+    log.info("没有新文章，无需发送邮件");
+    return;
+  }
+
+  const templateStr = (await downloadFile(emailTemplateUrl)) || fs.readFileSync(path.join(__dirname, "email_template.html"), "utf-8");
+  const emails = await getSubscribeEmails(subscribeJsonUrl);
+
+  for (const article of newArticles) {
+    const htmlContent = renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo);
+    const subject = `博客更新通知 - ${article.title}`;
+    const smtpConfig = {
+      host: smtpServer,
+      port: smtpPort,
+      secure: !smtpUseTls,
+      auth: { user: senderEmail, pass: smtpPassword },
+    };
+    await sendEmail(smtpConfig, senderEmail, emails, subject, htmlContent);
   }
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch((error) => log.error(`主函数运行失败: ${error.message}`));
