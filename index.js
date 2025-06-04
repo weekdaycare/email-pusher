@@ -100,6 +100,27 @@ async function downloadFile(url) {
   }
 }
 
+// 加载邮件模板
+async function loadEmailTemplate(emailTemplateUrl, defaultTemplatePath) {
+  let templateStr = "";
+  if (emailTemplateUrl) {
+    try {
+      templateStr = await downloadFile(emailTemplateUrl);
+      if (!templateStr) {
+        throw new Error("下载的模板内容为空");
+      }
+    } catch (error) {
+      console.warn(`无法下载邮件模板，使用本地默认模板: ${error.message}`);
+    }
+  } else {
+    templateStr = fs.readFileSync(defaultTemplatePath, "utf-8");
+    console.info("已加载本地默认邮件模板");
+  }
+
+  return templateStr;
+}
+
+
 // 渲染 HTML 模板
 function renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo) {
   return templateStr
@@ -177,7 +198,8 @@ async function main() {
     return;
   }
 
-  const templateStr = (await downloadFile(emailTemplateUrl)) || fs.readFileSync(path.join(__dirname, "email_template.html"), "utf-8");
+  const defaultTemplatePath = path.join(__dirname, "email_template.html");
+  const templateStr = await loadEmailTemplate(emailTemplateUrl, defaultTemplatePath);
   const emails = await getSubscribeEmails(subscribeJsonUrl);
 
   for (const article of newArticles) {
