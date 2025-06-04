@@ -32025,7 +32025,7 @@ async function main() {
   const smtpPort = process.env.INPUT_SMTP_PORT;
   const smtpUseTls = process.env.INPUT_SMTP_USE_TLS === "true";
   const senderEmail = process.env.INPUT_SENDER_EMAIL;
-  const smtpPassword = process.env.SMTP_PASSWORD;
+  const smtpPassword = process.env.INPUT_SMTP_PASSWORD;
   const websiteTitle = process.env.WEBSITE_TITLE;
   const websiteIcon = process.env.WEBSITE_ICON;
   const repo = process.env.GITHUB_REPOSITORY;
@@ -32065,15 +32065,6 @@ async function main() {
   const defaultTemplatePath = __nccwpck_require__.ab + "email_template.html";
   const templateStr = await loadEmailTemplate(emailTemplateUrl, __nccwpck_require__.ab + "email_template.html");
   const emails = await getSubscribeEmails(subscribeJsonUrl);
-
-	// 输出所有相关的环境变量
-	console.log("环境变量:");
-	console.log("INPUT_SMTP_SERVER:", process.env.INPUT_SMTP_SERVER);
-	console.log("INPUT_SMTP_PORT:", process.env.INPUT_SMTP_PORT);
-	console.log("INPUT_SMTP_USE_TLS:", process.env.INPUT_SMTP_USE_TLS);
-	console.log("INPUT_SENDER_EMAIL:", process.env.INPUT_SENDER_EMAIL);
-	console.log("SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "已设置" : "未设置");
-
 
   for (const article of newArticles) {
     const htmlContent = renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, repo);
