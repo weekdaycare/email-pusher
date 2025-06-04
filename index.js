@@ -7,32 +7,28 @@ const FeedParser = require("feedparser");
 const log = console;
 
 // 下载 JSON 文件
-async function downloadJson(url, retries = 3, delay = 2000) {
+async function downloadJson(url, headers = {}, retries = 3, delay = 2000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      console.log(`尝试下载 JSON，第 ${attempt + 1} 次，URL: ${url}`);
-      const response = await fetch(url, { timeout: 10000 });
+      const response = await fetch(url, { headers, timeout: 3000 });
       if (!response.ok) {
-        throw new Error(`HTTP 错误: ${response.status}`);
+        throw new Error(`Request failed with status code ${response.status}`);
       }
       const data = await response.json();
-      console.log("JSON 下载成功:", data);
       return data;
     } catch (error) {
-      console.warn(`下载 JSON 失败，第 ${attempt + 1} 次: ${error.message}`);
-      if (attempt < retries - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
+      log.warn(`下载 JSON 失败 [${url}]，第 ${attempt + 1} 次: ${error.message}`);
+      if (attempt < retries - 1) await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  console.error("下载 JSON 失败，超过最大重试次数");
   return null;
 }
 
 // 获取上次文章数据
-async function getLastArticles(repo) {
-  const url = `https://raw.githubusercontent.com/${repo}/refs/heads/output/v2/last_articles.json`;
-  const data = await downloadJson(url);
+async function getLastArticles(repo, token) {
+  const url = `https://raw.githubusercontent.com/${repo}/output/v2/last_articles.json`;
+  const headers = { Authorization: `Bearer ${token}` };
+  const data = await downloadJson(url, headers);
   if (!data) {
     log.warn("获取 last_articles.json 失败，使用空数据");
     return { articles: [], fail_count: 0 };
@@ -61,9 +57,13 @@ async function parseRss(rssUrl, maxCount = 5) {
   return new Promise((resolve, reject) => {
     const articles = [];
     const feedParser = new FeedParser();
-    axios
-      .get(rssUrl, { responseType: "stream" })
-      .then((response) => response.data.pipe(feedParser))
+    fetch(rssUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Request failed with status code ${response.status}`);
+        }
+        return response.body.pipe(feedParser);
+      })
       .catch((error) => reject(error));
 
     feedParser.on("error", (error) => reject(error));
@@ -91,8 +91,12 @@ function getNewArticles(latest, last) {
 // 下载文件
 async function downloadFile(url) {
   try {
-    const response = await axios.get(url, { timeout: 10000 });
-    return response.data;
+    const response = await fetch(url, { timeout: 10000 });
+    if (!response.ok) {
+      throw new Error(`Request failed with status code ${response.status}`);
+    }
+    const data = await response.text();
+    return data;
   } catch (error) {
     log.error(`下载文件失败: ${url}, 错误: ${error.message}`);
     return null;
@@ -109,7 +113,6 @@ function renderEmailTemplate(templateStr, article, websiteTitle, websiteIcon, re
     .replace(/{{ summary }}/g, article.summary)
     .replace(/{{ link }}/g, article.link);
 }
-
 
 // 发送邮件
 async function sendEmail(smtpConfig, senderEmail, toEmails, subject, htmlContent) {
@@ -143,8 +146,9 @@ async function main() {
   const websiteTitle = process.env.WEBSITE_TITLE;
   const websiteIcon = process.env.WEBSITE_ICON;
   const repo = process.env.GITHUB_REPOSITORY;
+  const token = process.env.GITHUB_TOKEN;
 
-  const lastData = await getLastArticles(repo);
+  const lastData = await getLastArticles(repo, token);
   const lastArticles = lastData.articles || [];
   let failCount = lastData.fail_count || 0;
 
