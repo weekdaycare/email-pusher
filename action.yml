@@ -21,6 +21,9 @@ inputs:
   smtp_port:
     description: 'SMTP 端口（如 465/587）'
     required: true
+  smtp_password:
+    description: 'SMTP 密码（通过 secrets 注入）'
+    required: true
   smtp_use_tls:
     description: '是否使用 TLS（true/false）'
     required: true
@@ -36,11 +39,11 @@ inputs:
     description: '网站图标（用于邮件模板变量，可为空）'
     required: false
     default: ''
+  github_token:
+    description: 'GitHub Token，用于读取 last_articles.json'
+    required: false
 
 runs:
   using: 'node20'
   main: 'index.js'
 
-env:
-  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
